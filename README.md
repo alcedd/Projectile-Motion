@@ -18,4 +18,4 @@ This project visualizes the motion of a projectile launched at an initial speed 
 ```python
 animation.save("projectile_motion.gif", dpi=120)
 ```
-#### Description was partially written with assistance form AI for clarity. All code is original and hand-written by me.
+#### Description was partially written with assistance from AI for clarity. All code is original and hand-written by me.
