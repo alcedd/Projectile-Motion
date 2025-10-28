@@ -4,66 +4,91 @@ from matplotlib.animation import FuncAnimation
 
 plt.style.use("dark_background")
 
-while True:
-    try:
-        v: float = float(input("Enter initial speed (m/s): "))
-        angle: float = float(input("Enter initial angle (degrees) < 90: "))
-        break
-    except TypeError:
-        print("Type Error! You must enter a number.")
-    except ValueError:
-        print("Value Error! Try again.")
+def get_float(prompt) -> float:
+    while True:
+        try:
+            return float(input(prompt))
+        except TypeError:
+            print("Type error! You must enter a number.")
+        except ValueError:
+            print("Value error! Try again.")
+
+class Projectile_Motion:
+    def __init__(self, v, angle):
+        self.v = v
+        self.angle = angle
+
+        self.calculations()
+        self.creating_objects()
+        self.planes_configuration()
+    
+    def calculations(self):
+        self.V = np.array([self.v * np.cos(np.radians(self.angle)),
+                           self.v * np.sin(np.radians(self.angle))]) # Velocity (m/s)
         
+        self.t = np.linspace(0, (self.v * np.sin(np.radians(2 * self.angle))) / (np.cos(np.radians(self.angle)) * 9.8), 100) # Time (s)
+        self.x = self.V[0] * self.t
+        self.y = self.V[1] * self.t - 4.9 * (self.t ** 2)
 
-V = np.array([v * np.cos(np.radians(angle)), v * np.sin(np.radians(angle))]) # Velocity (m/s)
-t = np.linspace(0, (v * np.sin(np.radians(2 * angle))) / (np.cos(np.radians(angle)) * 9.8), 100) # Time (s)
-x = V[0]*t
-y = V[1]*t - 4.9*(t**2)
+        self.y_kinetic = (self.V[0] ** 2 + (self.V[1] - 9.8 * self.t) **2 ) / 2
+        self.y_potential = 9.8 * self.y
 
-y_kinetic = (V[0]**2 + (V[1] - 9.8*t)**2)/2
-y_potential = 9.8 * y
+    
+    def creating_objects(self):
+        self.fig, self.ax = plt.subplots(1, 2)
 
-fig, ax = plt.subplots(1, 2)
+        """First xy-plane objects"""
+        self.projectile, = self.ax[0].plot([], [],markersize="20", marker=".")
+        self.ax[0].text(self.x[np.argmax(self.y)]*0.5, max(self.y) * 1.1, f"max. height {round(max(self.y), 2)} m", size=10)
+        self.ax[0].text(max(self.x)/2 * 0.5, 0.05 * max(self.y), f"range {round(max(self.x), 2)} m")
+        self.ax[0].plot(self.x, self.y, "b--")
 
-projectile, = ax[0].plot([], [],markersize="20", marker=".")
-ax[0].text(x[np.argmax(y)]*0.5, max(y) * 1.1, f"max. height {round(max(y), 2)} m", size=10)
-ax[0].text(max(x)/2 * 0.5, 0.05 * max(y), f"range {round(max(x), 2)} m")
-ax[0].plot(x, y, "b--")
+        """Second xy-plane objects"""
+        self.kinetic_energy, = self.ax[1].plot([], [])
+        self.potential_energy, = self.ax[1].plot([], [])
+    
+    def planes_configuration(self):
+        """First xy-plane"""
+        self.ax[0].text(self.x[np.argmax(self.y)]*0.5, max(self.y) * 1.1, f"max. height {round(max(self.y), 2)} m", size=10)
+        self.ax[0].text(max(self.x)/2 * 0.5, 0.05 * max(self.y), f"range {round(max(self.x), 2)} m")
+        self.ax[0].plot(self.x, self.y, "b--")
 
-ax[0].set_ylim(0, max(y) * 1.5)
-ax[0].set_xlim(0, max(x) + 1)
-ax[0].set_title("Trajectory")
-ax[0].set_xlabel("Distance (Meters)")
-ax[0].set_ylabel("Distance (Meters)")
-ax[0].grid(alpha=0.3)
+        self.ax[0].set_ylim(0, max(self.y) * 1.5)
+        self.ax[0].set_xlim(0, max(self.x) + 1)
+        self.ax[0].set_title("Trajectory")
+        self.ax[0].set_xlabel("Distance (Meters)")
+        self.ax[0].set_ylabel("Distance (Meters)")
+        self.ax[0].grid(alpha=0.3)
 
-kinetic_energy, = ax[1].plot([], [])
-potential_energy, = ax[1].plot([], [])
-
-ax[1].set_ylim(0, max(y_kinetic))
-ax[1].set_xlim(0, max(t) + 1)
-ax[1].legend(["Kinetic Energy", "Potential Energy"], loc="upper right")
-ax[1].set_title("Trajectory")
-ax[1].set_xlabel("Time (Seconds)")
-ax[1].set_ylabel("Energy (Joules)")
-ax[1].grid(alpha=0.3)
-
-
-
-def update_data(frame):
-
-    projectile.set_data(x[(frame - 1):frame], y[(frame - 1):frame])
-    kinetic_energy.set_data(t[:frame], y_kinetic[:frame])
-    potential_energy.set_data(t[:frame], y_potential[:frame])
-
-animation = FuncAnimation(fig=fig,
-                           func=update_data,
-                           frames=len(t),
+        """Second xy-plane"""
+        self.ax[1].set_ylim(0, max(self.y_kinetic))
+        self.ax[1].set_xlim(0, max(self.t) + 1)
+        self.ax[1].legend(["Kinetic Energy", "Potential Energy"], loc="upper right")
+        self.ax[1].set_title("Trajectory")
+        self.ax[1].set_xlabel("Time (Seconds)")
+        self.ax[1].set_ylabel("Energy (Joules)")
+        self.ax[1].grid(alpha=0.3)
+    
+    def update_data(self, frame):
+        self.projectile.set_data(self.x[(frame - 1):frame], self.y[(frame - 1):frame])
+        self.kinetic_energy.set_data(self.t[:frame], self.y_kinetic[:frame])
+        self.potential_energy.set_data(self.t[:frame], self.y_potential[:frame])
+    
+    def run(self):
+        self.animation = FuncAnimation(fig=self.fig,
+                           func=self.update_data,
+                           frames=len(self.t),
                            interval=25, 
                            repeat=False)
+        
+        self.fig.tight_layout()
+        # self.animation.save("projectile_motion.gif", dpi=120) Creating GIF (uncomment)
 
-fig.tight_layout()
-# animation.save("projectile_motion.gif", dpi=120) Creating GIF (uncomment)
+        plt.suptitle("Projectile Motion", size=20)
+        plt.show()
+        
+v = get_float("Enter initial speed (m/s): ")
+angle = get_float("Enter initial angle (degrees) < 90: ")
 
-plt.suptitle("Projectile Motion", size=20)
-plt.show()
+simulation = Projectile_Motion(v, angle)
+simulation.run()
